@@ -35,17 +35,17 @@
 (defun save-to-anki (json)
   "Format request result of WORD."
   (or config-info (set-config-info))
-  (let* ((deck (cdr assoc 'deck config-info))
-         (model (cdr assoc 'model config-info))
-         (fields-map-alist (cdr assoc 'fields-map-alist config-info))
-         (sentence     (sentence-at-point))
-         (query        (assoc-default 'query       json)) ; string
-         (translation  (assoc-default 'translation json)) ; array
-         (errorCode    (assoc-default 'errorCode   json)) ; number
-         (web          (assoc-default 'web         json)) ; array
-         (basic        (assoc-default 'basic       json)) ; alist
+  (let* ((query        (or (assoc-default 'query       json) "")) ; string
+         (sentence     (replace-regexp-in-string (regexp-quote query)
+                                                 (lambda (match)
+                                                   (format "<b>%s</b>" match))
+                                                 (sentence-at-point)))
+         (translation  (or (assoc-default 'translation json) "")) ; array
+         (errorCode    (or (assoc-default 'errorCode   json) "")) ; number
+         (web          (or (assoc-default 'web         json) "")) ; array
+         (basic        (or (assoc-default 'basic       json) "")) ; alist
          ;; construct data for display
-         (phonetic (assoc-default 'phonetic basic))
+         (phonetic (or (assoc-default 'phonetic basic) ""))
          (translation-str (mapconcat
                            (lambda (trans) (concat "- " trans))
                            translation "<br>"))
@@ -62,7 +62,10 @@
                        (format "* Basic Explains<br>%s<br><br>* Web References<br>%s<br>"
                                basic-explains-str web-str)
                      (format "* Translation<br>%s<br>"
-                             query translation-str))))
+                             query translation-str)))
+         (deck (assoc-default 'deck config-info))
+         (model (assoc-default 'model config-info))
+         (fields-map-alist (assoc-default 'fields-map-alist config-info)))
     (AnkiConnect-AddNote deck model `((,(cdr (assoc 'word fields-map-alist)) . ,query)
                                       (,(cdr (assoc 'phonetic fields-map-alist)) . ,phonetic)
                                       (,(cdr (assoc 'explains fields-map-alist)) . ,explains)
