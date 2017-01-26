@@ -1,0 +1,14 @@
+#+TITLE: README
+#+AUTHOR: lujun9972
+#+TAGS: youdao2anki.el
+#+DATE: [2017-01-27 五 07:33]
+#+LANGUAGE:  zh-CN
+#+OPTIONS:  H:6 num:nil toc:t \n:nil ::t |:t ^:nil -:nil f:t *:t <:nil
+
+* Requirement
+anki + AnkiConnect
+
+* Usage
+1. lauch =anki= first.(be sure you have installed the =ankiconnect= plugin)
+2. execute =turn-on-youdao2anki=
+3. use =youdao-dictionary= as usual
