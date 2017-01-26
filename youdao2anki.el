@@ -15,6 +15,22 @@
 (defvar config-info nil
   "Use `youdao2anki-set-config-info' to set the config info")
 
+(defcustom config-file "~/.youdao2anki.cfg"
+  "File used to store configure information")
+
+(defun load-config-info (&optional cfg-file)
+  "Load configure information from CFG-FILE"
+  (let ((cfg-file (or cfg-file config-file)))
+    (setq config-info (with-temp-buffer
+                        (insert-file-contents cfg-file)
+                        (car (read-from-string (buffer-string)))))))
+
+(defun save-config-info (&optional cfg-file)
+  "Save configure information into CFG-FILE"
+  (let ((cfg-file (or cfg-file config-file)))
+    (with-temp-file cfg-file
+      (prin1 config-info (current-buffer)))))
+
 (defun set-config-info ()
   "Set the deck,model and fields map relationship"
   (interactive)
@@ -29,12 +45,13 @@
     (setq config-info
           `((deck . ,deck)
             (model . ,model)
-            (fields-map-alist . ,fields-map-alist)))))
+            (fields-map-alist . ,fields-map-alist))))
+  (save-config-info))
 
 
 (defun save-to-anki (json)
-  "Format request result of WORD."
-  (or config-info (set-config-info))
+  "Save the JSON to anki."
+  (or config-info (load-config-info) (set-config-info))
   (let* ((query        (or (assoc-default 'query       json) "")) ; string
          (sentence     (replace-regexp-in-string (regexp-quote query)
                                                  (lambda (match)
