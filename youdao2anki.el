@@ -12,46 +12,33 @@
 ;;;###autoload
 (define-namespace youdao2anki-
 
-(defcustom deck nil
-  "Specify which deck the note will be saved into"
-  :type 'string)
+(defvar config-info nil
+  "Use `youdao2anki-set-config-info' to set the config info")
 
-(defcustom model nil
-  "Specify the note's model"
-  :type 'string)
-
-(defcustom fields-map-alist '((word . "")
-                              (phonetic . "")
-                              (explains . "")
-                              (sentence . ""))
-  "Specify how to save to note"
-  :type 'alist)
-
-(defun set-deck ()
-  "Set the deck"
+(defun set-config-info ()
+  "Set the deck,model and fields map relationship"
   (interactive)
-  (setq deck (completing-read "Select a deck:" (AnkiConnect-DeckNames))))
-
-(defun set-model ()
-  "Set the model"
-  (interactive)
-  (setq model (completing-read "Select a model:" (AnkiConnect-ModelNames))))
-
-(defun set-fields-map-alist ()
-  (interactive)
-  (let* ((deck (set-deck))
-         (model (set-model))
-         (fields (AnkiConnect-ModelFieldNames model))
-         (keys '(word phonetic explains sentence)))
-    (setq fields-map-alist (mapcar (lambda (key)
+  (let* ((deck (completing-read "Select a deck:" (AnkiConnect-DeckNames)))
+         (model (completing-read "Select a model:" (AnkiConnect-ModelNames)))
+         (fields (cons " " (AnkiConnect-ModelFieldNames model)))
+         (keys '(word phonetic explains sentence))
+         (fields-map-alist (mapcar (lambda (key)
                                      (let ((prompt (format "which field used to store the %s" key)))
                                        (cons key (completing-read prompt fields))))
-                                   keys))))
+                                   keys)))
+    (setq config-info
+          `((deck . ,deck)
+            (model . ,model)
+            (fields-map-alist . ,fields-map-alist)))))
+
 
 (defun save-to-anki (json)
   "Format request result of WORD."
-  (fields-map-alist or (set-fields-map-alist))
-  (let* ((sentence     (sentence-at-point))
+  (or config-info (set-config-info))
+  (let* ((deck (cdr assoc 'deck config-info))
+         (model (cdr assoc 'model config-info))
+         (fields-map-alist (cdr assoc 'fields-map-alist config-info))
+         (sentence     (sentence-at-point))
          (query        (assoc-default 'query       json)) ; string
          (translation  (assoc-default 'translation json)) ; array
          (errorCode    (assoc-default 'errorCode   json)) ; number
@@ -70,19 +57,16 @@
                      (format "- %s :: %s"
                              (assoc-default 'key k-v)
                              (mapconcat 'identity (assoc-default 'value k-v) "; ")))
-                   web "<br>")))
-    (if basic
-        (let ((explains (format "* Basic Explains<br>%s<br><br>* Web References<br>%s<br>"
-                                basic-explains-str web-str)))
-          (AnkiConnect-AddNote deck model `((,(cdr (assoc 'word fields-map-alist)) . ,query)
-                                            (,(cdr (assoc 'phonetic fields-map-alist)) . ,phonetic)
-                                            (,(cdr (assoc 'explains fields-map-alist)) . ,explains)
-                                            (,(cdr (assoc 'sentence fields-map-alist)) . ,sentence))))
-      (let ((explains (format "* Translation<br>%s<br>"
-                              query translation-str)))
-        (AnkiConnect-AddNote deck model `((,(cdr (assoc 'word fields-map-alist)) . ,query)
-                                          (,(cdr (assoc 'explains fields-map-alist)) . ,explains)
-                                          (,(cdr (assoc 'sentence fields-map-alist)) . ,sentence))))))
+                   web "<br>"))
+         (explains (if basic
+                       (format "* Basic Explains<br>%s<br><br>* Web References<br>%s<br>"
+                               basic-explains-str web-str)
+                     (format "* Translation<br>%s<br>"
+                             query translation-str))))
+    (AnkiConnect-AddNote deck model `((,(cdr (assoc 'word fields-map-alist)) . ,query)
+                                      (,(cdr (assoc 'phonetic fields-map-alist)) . ,phonetic)
+                                      (,(cdr (assoc 'explains fields-map-alist)) . ,explains)
+                                      (,(cdr (assoc 'sentence fields-map-alist)) . ,sentence))))
   json)
 
 (defun turn-on ()
