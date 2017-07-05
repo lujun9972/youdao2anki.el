@@ -89,12 +89,12 @@
                                       (,(cdr (assoc 'sentence fields-map-alist)) . ,sentence))))
   json)
 
-(defun turn-on ()
-  (interactive)
-  (advice-add 'youdao-dictionary--request :filter-return 'youdao2anki-save-to-anki))
-(defun turn-off ()
-  (interactive)
-  (advice-remove 'youdao-dictionary--request 'youdao2anki-save-to-anki))
 )
 
+(defun turn-on-youdao2anki ()
+  (interactive)
+  (advice-add 'youdao-dictionary--request :filter-return 'youdao2anki-save-to-anki))
+(defun turn-off-youdao2anki ()
+  (interactive)
+  (advice-remove 'youdao-dictionary--request 'youdao2anki-save-to-anki))
 
